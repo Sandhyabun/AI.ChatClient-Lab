@@ -11,9 +11,14 @@ namespace LLama.WebAPI.Services
 
         public StatelessChatService(IConfiguration configuration)
         {
-            var @params = new Common.ModelParams(configuration["ModelPath"]!)
+            var sec =configuration.GetSection("LLama");
+            var modelPath = sec.GetValue<string>("ModelPath")!;
+            var ctxSize   = sec.GetValue<int?>("ContextSize") ?? 512;
+            var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
+            var @params = new ModelParams(modelPath)
             {
                 ContextSize = 512,
+                GpuLayerCount = gpuLayers,
             };
 
             // todo: share weights from a central service
