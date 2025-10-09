@@ -13,6 +13,7 @@ builder.Services.AddSingleton<StatefulChatService>();
 builder.Services.AddScoped<StatelessChatService>();
 
 var app = builder.Build();
+app.UseMiddleware<LLama.WebAPI.Services.McpLoggingMiddleware>();
 app.UseRouting();
 
 // Configure the HTTP request pipeline.
