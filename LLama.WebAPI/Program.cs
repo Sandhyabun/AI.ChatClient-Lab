@@ -24,6 +24,7 @@ builder.Services.AddSingleton(sp =>
 );
 
 var app = builder.Build();
+app.UseMiddleware<LLama.WebAPI.Services.McpLoggingMiddleware>();
 app.UseRouting();
 
 // Configure the HTTP request pipeline.
