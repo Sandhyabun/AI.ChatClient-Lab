@@ -23,7 +23,7 @@ public sealed class StatefulChatService
         var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
         var @params = new ModelParams(modelPath)
         {
-            ContextSize = 512,
+            ContextSize = ctxSize,
             GpuLayerCount = gpuLayers,
         };
 
