@@ -25,7 +25,7 @@ namespace LLama.WebAPI.Services
         }
 
         // Generic POST request to MCP endpoint
-        public async Task<string> SendAsync(object requestBody)
+       public async Task<string> SendAsync<T>(T requestBody)
         {
             try
             {
