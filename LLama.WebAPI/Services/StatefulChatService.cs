@@ -17,9 +17,9 @@ public sealed class StatefulChatService
 
     public StatefulChatService(IConfiguration configuration, ILogger<StatefulChatService> logger)
     {
-        var sec =configuration.GetSection("LLama");
+        var sec = configuration.GetSection("LLama");
         var modelPath = sec.GetValue<string>("ModelPath")!;
-        var ctxSize   = sec.GetValue<int?>("ContextSize") ?? 512;
+        var ctxSize = sec.GetValue<int?>("ContextSize") ?? 512;
         var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
         var @params = new ModelParams(modelPath)
         {
@@ -55,7 +55,7 @@ public sealed class StatefulChatService
             new Common.ChatHistory.Message(Common.AuthorRole.User, input.Text),
             new Common.InferenceParams
             {
-                AntiPrompts = [ "User:" ],
+                AntiPrompts = ["User:"],
 
                 SamplingPipeline = new DefaultSamplingPipeline
                 {
@@ -87,7 +87,7 @@ public sealed class StatefulChatService
             new Common.ChatHistory.Message(Common.AuthorRole.User, input.Text),
             new Common.InferenceParams
             {
-                AntiPrompts = [ "User:" ],
+                AntiPrompts = ["User:"],
 
                 SamplingPipeline = new DefaultSamplingPipeline
                 {

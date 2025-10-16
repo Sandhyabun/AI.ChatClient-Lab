@@ -12,7 +12,7 @@ jobs:
   build:
     name: Test
     runs-on: ${{ matrix.os }}
-    strategy:
+    strategy: 
       fail-fast: false
       matrix:
         build: [linux-release, windows-release, osx-release]

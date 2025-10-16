@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 
 namespace LLama.WebAPI.Services;
 
@@ -15,32 +15,32 @@ public class McpLoggingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        
+
         context.Request.EnableBuffering();
-        
+
         var requestBody = await ReadRequestBodyAsync(context.Request);
         _logger.LogInformation("==== MCP REQUEST ====");
         _logger.LogInformation("Method: {Method}", context.Request.Method);
         _logger.LogInformation("Path: {Path}", context.Request.Path);
-        _logger.LogInformation("Query: {Query}", context.Request.QueryString);  
+        _logger.LogInformation("Query: {Query}", context.Request.QueryString);
         _logger.LogInformation("Body: {Body}", requestBody);
         _logger.LogInformation("====================");
 
-        
+
         var originalBodyStream = context.Response.Body;
         using var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
 
         await _next(context);
 
-        
+
         var responseBodyText = await ReadResponseBodyAsync(context.Response);
         _logger.LogInformation("==== MCP RESPONSE ====");
         _logger.LogInformation("StatusCode: {StatusCode}", context.Response.StatusCode);
         _logger.LogInformation("Body: {Body}", responseBodyText);
         _logger.LogInformation("=====================");
 
-        
+
         await responseBody.CopyToAsync(originalBodyStream);
     }
 

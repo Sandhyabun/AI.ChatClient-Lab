@@ -1,4 +1,4 @@
-﻿using LLama.WebAPI.Models;
+using LLama.WebAPI.Models;
 using System.Net.Http.Json;
 
 namespace LLama.WebAPI.Services
@@ -17,7 +17,7 @@ namespace LLama.WebAPI.Services
 
             // Configure base URL
             _httpClient.BaseAddress = new Uri(_settings.ServerUrl);
-            
+
             if (!string.IsNullOrEmpty(_settings.ApiKey))
             {
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_settings.ApiKey}");
@@ -30,7 +30,7 @@ namespace LLama.WebAPI.Services
             try
             {
                 _logger.LogInformation("Sending MCP request to {Url}", _settings.ServerUrl);
-                
+
                 var response = await _httpClient.PostAsJsonAsync("/Chat/Send", requestBody);
                 response.EnsureSuccessStatusCode();
 

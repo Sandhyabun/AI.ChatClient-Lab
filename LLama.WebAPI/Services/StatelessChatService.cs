@@ -11,9 +11,9 @@ namespace LLama.WebAPI.Services
 
         public StatelessChatService(IConfiguration configuration)
         {
-            var sec =configuration.GetSection("LLama");
+            var sec = configuration.GetSection("LLama");
             var modelPath = sec.GetValue<string>("ModelPath")!;
-            var ctxSize   = sec.GetValue<int?>("ContextSize") ?? 512;
+            var ctxSize = sec.GetValue<int?>("ContextSize") ?? 512;
             var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
             var @params = new ModelParams(modelPath)
             {
