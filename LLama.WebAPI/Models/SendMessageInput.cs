@@ -1,4 +1,4 @@
-﻿namespace LLama.WebAPI.Models;
+namespace LLama.WebAPI.Models;
 
 public class SendMessageInput
 {

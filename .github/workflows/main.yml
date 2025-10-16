@@ -12,7 +12,7 @@ jobs:
   build:
     name: Test
     runs-on: ${{ matrix.os }}
-    strategy:
+    strategy: 
       fail-fast: false
       matrix:
         build: [linux-release, windows-release, osx-release]
@@ -37,7 +37,7 @@ jobs:
     - uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          8.0.x
+          9.0.x
     - name: Install Mobile Workloads
       if: ${{ contains(runner.os, 'windows') }}
       run: |
