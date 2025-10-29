@@ -1,5 +1,6 @@
 using LLama.WebAPI.Services;
 using LLama.WebAPI.Models;
+using LLama.WebAPI.Hubs;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,23 +10,33 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddSingleton<StatefulChatService>();
-builder.Services.AddScoped<StatelessChatService>();
-builder.Services.AddHttpClient<McpClientService>();
+// SignalR and CORS  
+builder.Services.AddSignalR();
+builder.Services.AddCors(o =>
+{
+    o.AddPolicy("AllowLocalhost", p => p
+        .WithOrigins("http://localhost:7038")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
 
+//  Services 
+builder.Services.AddSingleton<StatefulChatService>();   // For Local
+builder.Services.AddScoped<StatelessChatService>();     // For MCP
+builder.Services.AddHttpClient<McpClientService>();
 
 builder.Services.Configure<McpSettings>(
     builder.Configuration.GetSection("Mcp")
 );
 
-
 builder.Services.AddSingleton(sp =>
     sp.GetRequiredService<IOptions<McpSettings>>().Value
 );
 
+builder.Services.AddRazorPages();
+
 var app = builder.Build();
-app.UseMiddleware<LLama.WebAPI.Services.McpLoggingMiddleware>();
-app.UseRouting();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -34,11 +45,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseStaticFiles();
+app.UseRouting();
+app.UseCors("AllowLocalhost");
+app.UseMiddleware<McpLoggingMiddleware>();
 app.UseAuthorization();
 
-app.UseEndpoints(endpoints =>
-{
-    _ = endpoints.MapControllers();
-});
+
+app.MapControllers();
+app.MapRazorPages();
+app.MapHub<LlamaHub>("/LlamaHub");
 
 app.Run();
