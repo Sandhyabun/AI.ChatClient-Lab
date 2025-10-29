@@ -1,53 +1,73 @@
 using LLama.Common;
 using System.Text;
 using static LLama.LLamaTransforms;
-
+using Microsoft.Extensions.Logging;
 namespace LLama.WebAPI.Services
 {
     public class StatelessChatService
     {
         private readonly LLamaContext _context;
-        private readonly ChatSession _session;
+        private readonly LLamaWeights _weights;
+        private readonly ILogger<StatelessChatService> _log;  
 
-        public StatelessChatService(IConfiguration configuration)
+        public StatelessChatService(IConfiguration configuration, ILogger<StatelessChatService> log)
         {
+            _log = log;
             var sec = configuration.GetSection("LLama");
             var modelPath = sec.GetValue<string>("ModelPath")!;
-            var ctxSize = sec.GetValue<int?>("ContextSize") ?? 512;
+            var ctxSize = sec.GetValue<uint?>("ContextSize") ?? 512;
             var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
             var @params = new ModelParams(modelPath)
             {
                 ContextSize = ctxSize,
                 GpuLayerCount = gpuLayers,
             };
-
             // todo: share weights from a central service
-            using var weights = LLamaWeights.LoadFromFile(@params);
+            _weights = LLamaWeights.LoadFromFile(@params);      
+            _context = new LLamaContext(_weights, @params);      
+            
 
-            _context = new LLamaContext(weights, @params);
-
-            // TODO: replace with a stateless executor
-            _session = new ChatSession(new InteractiveExecutor(_context))
-                        .WithOutputTransform(new LLamaTransforms.KeywordTextOutputStreamTransform(new string[] { "User:", "Assistant:" }, redundancyLength: 8))
-                        .WithHistoryTransform(new HistoryTransform());
+            
         }
 
         public async Task<string> SendAsync(ChatHistory history)
         {
-            var result = _session.ChatAsync(history, new InferenceParams()
-            {
-                AntiPrompts = new string[] { "User:" },
-            });
+            if (history is null)
+                throw new ArgumentNullException(nameof(history));
 
-            var sb = new StringBuilder();
-            await foreach (var r in result)
+            var last = history.Messages?.LastOrDefault();
+            if (last is null || string.IsNullOrWhiteSpace(last.Content))
+                throw new InvalidOperationException("ChatHistory contains no user message.");
+
+            try
             {
-                Console.Write(r);
-                sb.Append(r);
+                // existing LLama pipeline 
+                var session =
+                    new ChatSession(new InteractiveExecutor(_context))
+                        .WithOutputTransform(new LLamaTransforms.KeywordTextOutputStreamTransform(
+                            keywords: new[] { "User:", "Assistant:" }, redundancyLength: 8))
+                        .WithHistoryTransform(new HistoryTransform());
+
+                var resultStream = session.ChatAsync(
+                    history,
+                    new InferenceParams { AntiPrompts = new[] { "User:" } }
+                );
+
+                var sb = new StringBuilder();
+                await foreach (var chunk in resultStream)
+                {
+                    _log.LogDebug("{Chunk}", chunk);
+                    sb.Append(chunk);
+                }
+
+                return sb.ToString();
             }
-
-            return sb.ToString();
-
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "MCP stateless send failed.");
+                
+                throw;
+            }
         }
     }
     public class HistoryTransform : DefaultHistoryTransform
