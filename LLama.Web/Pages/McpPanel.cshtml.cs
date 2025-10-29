@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace LLama.Web.Pages   
+namespace LLama.Web.Pages
 {
     public class McpPanelModel : PageModel
     {

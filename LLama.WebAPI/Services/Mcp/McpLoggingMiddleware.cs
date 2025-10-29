@@ -27,12 +27,12 @@ public class McpLoggingMiddleware
 
         //Response wrapping
         var originalBodyStream = context.Response.Body;
-        var responseBody = new MemoryStream();         
+        var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
 
         try
         {
-            await _next(context);                   
+            await _next(context);
 
             // Success path: read & log buffered response, then copy to original
             var responseBodyText = await ReadResponseBodyAsync(context.Response);
@@ -49,12 +49,12 @@ public class McpLoggingMiddleware
             // Put original stream back so the DeveloperExceptionPage can write to it
             context.Response.Body = originalBodyStream;
 
-           
+
             responseBody.Position = 0;
             var partial = await new StreamReader(responseBody, Encoding.UTF8).ReadToEndAsync();
             _logger.LogError(ex, "Unhandled exception in pipeline. Partial response so far: {Body}", partial);
 
-            throw;                                 
+            throw;
         }
         finally
         {

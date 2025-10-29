@@ -1,4 +1,4 @@
-﻿using LLama.WebAPI.Models;
+using LLama.WebAPI.Models;
 using Microsoft.AspNetCore.SignalR;
 using LLama.WebAPI.Services;
 
@@ -24,7 +24,7 @@ namespace LLama.WebAPI.Hubs
             Console.WriteLine($"[Hub] Streaming started for prompt: {prompt}");
 
             await foreach (var chunk in _chatService.SendStream(new SendMessageInput { Text = prompt }))
-            
+
             {
                 yield return chunk;
             }

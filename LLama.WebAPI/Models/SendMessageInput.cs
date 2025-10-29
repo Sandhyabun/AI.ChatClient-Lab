@@ -4,13 +4,13 @@ namespace LLama.WebAPI.Models
 {
     public class SendMessageInput
     {
-        
+
         public string Text { get; set; } = "";
-        
+
         public string? UserId { get; set; }
 
         public string Model { get; set; } = "default";
-        
+
         [JsonPropertyName("prompt")]
         public string? Prompt
         {

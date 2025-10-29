@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Client;
 using LLama.Web.Hubs;
 
 namespace LLama.Web.Services;
@@ -17,7 +17,7 @@ public sealed class StreamService
             .Build();
     }
 
-    
+
     public async Task StartAsync(Action<string> onToken)
     {
         _connection.On<string>("ReceiveToken", onToken);
@@ -28,10 +28,10 @@ public sealed class StreamService
 
         Console.WriteLine(" Connected to LlamaHub");
 
-             await _connection.InvokeAsync("PingServer", "Hello backend!");
+        await _connection.InvokeAsync("PingServer", "Hello backend!");
     }
 
-    
+
     public Task SendPrompt(string prompt) =>
         _connection.InvokeAsync("StreamResponse", prompt);
 }

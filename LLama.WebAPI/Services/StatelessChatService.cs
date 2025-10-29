@@ -8,7 +8,7 @@ namespace LLama.WebAPI.Services
     {
         private readonly LLamaContext _context;
         private readonly LLamaWeights _weights;
-        private readonly ILogger<StatelessChatService> _log;  
+        private readonly ILogger<StatelessChatService> _log;
 
         public StatelessChatService(IConfiguration configuration, ILogger<StatelessChatService> log)
         {
@@ -23,11 +23,11 @@ namespace LLama.WebAPI.Services
                 GpuLayerCount = gpuLayers,
             };
             // todo: share weights from a central service
-            _weights = LLamaWeights.LoadFromFile(@params);      
-            _context = new LLamaContext(_weights, @params);      
-            
+            _weights = LLamaWeights.LoadFromFile(@params);
+            _context = new LLamaContext(_weights, @params);
 
-            
+
+
         }
 
         public async Task<string> SendAsync(ChatHistory history)
@@ -65,7 +65,7 @@ namespace LLama.WebAPI.Services
             catch (Exception ex)
             {
                 _log.LogError(ex, "MCP stateless send failed.");
-                
+
                 throw;
             }
         }
