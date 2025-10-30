@@ -35,9 +35,7 @@ namespace LLama.WebAPI.Services
             ArgumentNullException.ThrowIfNull(history);
 
             var last = history.Messages?.LastOrDefault();
-            if (last is null || string.IsNullOrWhiteSpace(last.Content))
-                throw new InvalidOperationException("ChatHistory contains no user message.");
-
+            ArgumentException.ThrowIfNullOrWhiteSpace(last?.Content);
             try
             {
                 // existing LLama pipeline 
