@@ -32,8 +32,7 @@ namespace LLama.WebAPI.Services
 
         public async Task<string> SendAsync(ChatHistory history)
         {
-            if (history is null)
-                throw new ArgumentNullException(nameof(history));
+            ArgumentNullException.ThrowIfNull(history);
 
             var last = history.Messages?.LastOrDefault();
             if (last is null || string.IsNullOrWhiteSpace(last.Content))
