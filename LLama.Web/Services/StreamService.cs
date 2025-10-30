@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Configuration;
 using LLama.Web.Hubs;
 
 namespace LLama.Web.Services;
@@ -9,7 +10,9 @@ public sealed class StreamService
     
     public StreamService(IConfiguration configuration)
     {
-        var hubUrl = configuration["LLama:SignalRHub"]!;
+        var hubUrl = configuration["LLama:SignalRHub"];
+        ArgumentException.ThrowIfNullOrWhiteSpace(hubUrl);
+        
 
         _connection = new HubConnectionBuilder()
             .WithUrl(hubUrl)
