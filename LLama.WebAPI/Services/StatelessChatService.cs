@@ -9,7 +9,7 @@ namespace LLama.WebAPI.Services
         private readonly LLamaContext _context;
         private readonly LLamaWeights _weights;
         private readonly ILogger<StatelessChatService> _log;
-
+        private bool _disposed;
         public StatelessChatService(IConfiguration configuration, ILogger<StatelessChatService> log)
         {
             _log = log;
@@ -41,7 +41,7 @@ namespace LLama.WebAPI.Services
                 // existing LLama pipeline 
                 var session =
                     new ChatSession(new InteractiveExecutor(_context))
-                        .WithOutputTransform(new LLamaTransforms.KeywordTextOutputStreamTransform(
+                        .WithOutputTransform(new KeywordTextOutputStreamTransform(
                             keywords: new[] { "User:", "Assistant:" }, redundancyLength: 8))
                         .WithHistoryTransform(new HistoryTransform());
 
@@ -62,17 +62,27 @@ namespace LLama.WebAPI.Services
             catch (Exception ex)
             {
                 _log.LogError(ex, "MCP stateless send failed.");
-
                 throw;
             }
         }
+
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            _log.LogInformation("Disposing StatelessChatService...");
+            _context?.Dispose();
+            _weights?.Dispose();
+            _disposed = true;
+        }
     }
+
     public class HistoryTransform : DefaultHistoryTransform
     {
         public override string HistoryToText(ChatHistory history)
         {
             return base.HistoryToText(history) + "\n Assistant:";
         }
-
     }
 }
