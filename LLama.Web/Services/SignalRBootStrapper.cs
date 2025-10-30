@@ -6,6 +6,15 @@ public sealed class SignalRBootstrapper(StreamService stream) : IHostedService
 {
     public async Task StartAsync(CancellationToken ct)
         => await stream.StartAsync(token => Console.Write(token));
+    public async Task StopAsync(CancellationToken ct)
+    {
+        await stream.StopAsync(ct);
+      
+            Console.WriteLine("StreamService connection stopped and disposed");
+            
+        
+    }
 
-    public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
+
+    
 }

@@ -6,7 +6,7 @@ namespace LLama.Web.Services;
 public sealed class StreamService
 {
     private readonly HubConnection _connection;
-
+    
     public StreamService(IConfiguration configuration)
     {
         var hubUrl = configuration["LLama:SignalRHub"]!;
@@ -21,7 +21,7 @@ public sealed class StreamService
     public async Task StartAsync(Action<string> onToken)
     {
         _connection.On<string>("ReceiveToken", onToken);
-        _connection.On("StreamComplete", () => Console.WriteLine("✅ Stream finished"));
+        _connection.On("StreamComplete", () => Console.WriteLine(" Stream finished"));
 
         if (_connection.State == HubConnectionState.Disconnected)
             await _connection.StartAsync();
@@ -34,4 +34,13 @@ public sealed class StreamService
 
     public Task SendPrompt(string prompt) =>
         _connection.InvokeAsync("StreamResponse", prompt);
+    public async Task StopAsync(CancellationToken ct)
+    {
+        if (_connection != null)
+        {
+            await _connection.StopAsync(ct);
+            await _connection.DisposeAsync();
+            Console.WriteLine(" StreamService connection stopped and disposed");
+        }
+    }
 }
