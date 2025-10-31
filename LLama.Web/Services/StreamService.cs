@@ -60,6 +60,7 @@ namespace LLama.Web.Services
 
         public async Task StopAsync(CancellationToken ct)
         {
+            await _lock.WaitAsync(ct);
             try
             {
                 await _connection.StopAsync(ct);
@@ -69,6 +70,10 @@ namespace LLama.Web.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error stopping StreamService: {ex.Message}");
+            }
+            finally
+            {
+                _lock.Release();
             }
         }
     }
