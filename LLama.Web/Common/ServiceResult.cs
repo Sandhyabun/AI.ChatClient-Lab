@@ -1,4 +1,4 @@
-﻿namespace LLama.Web.Common
+namespace LLama.Web.Common
 {
     public class ServiceResult<T> : ServiceResult, IServiceResult<T>
     {

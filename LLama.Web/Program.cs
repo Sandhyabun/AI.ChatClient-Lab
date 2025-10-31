@@ -25,6 +25,8 @@ builder.Services.AddOptions<LLamaOptions>()
 builder.Services.AddHostedService<ModelLoaderService>();
 builder.Services.AddSingleton<IModelService, ModelService>();
 builder.Services.AddSingleton<IModelSessionService, ModelSessionService>();
+builder.Services.AddSingleton<StreamService>();      // client service
+builder.Services.AddHostedService<SignalRBootstrapper>();
 
 var app = builder.Build();
 
@@ -32,7 +34,6 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

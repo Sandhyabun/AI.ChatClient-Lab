@@ -152,7 +152,7 @@ public class ModelSessionService : IModelSessionService
         {
             await foreach (var token in InferAsync(sessionId, prompt, inferenceConfig, cancellationToken).ConfigureAwait(false))
             {
-                if (token.TokenType ==  TokenType.Content)
+                if (token.TokenType == TokenType.Content)
                     yield return token.Content;
             }
         }

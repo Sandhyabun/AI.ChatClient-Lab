@@ -15,9 +15,8 @@ public class McpLoggingMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-
+        //  Request 
         context.Request.EnableBuffering();
-
         var requestBody = await ReadRequestBodyAsync(context.Request);
         _logger.LogInformation("==== MCP REQUEST ====");
         _logger.LogInformation("Method: {Method}", context.Request.Method);
@@ -26,25 +25,47 @@ public class McpLoggingMiddleware
         _logger.LogInformation("Body: {Body}", requestBody);
         _logger.LogInformation("====================");
 
-
+        //Response wrapping
         var originalBodyStream = context.Response.Body;
         using var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
 
-        await _next(context);
+        try
+        {
+            await _next(context);
 
+            // Success path: read & log buffered response, then copy to original
+            var responseBodyText = await ReadResponseBodyAsync(context.Response);
+            _logger.LogInformation("==== MCP RESPONSE ====");
+            _logger.LogInformation("StatusCode: {StatusCode}", context.Response.StatusCode);
+            _logger.LogInformation("Body: {Body}", responseBodyText);
+            _logger.LogInformation("=====================");
 
-        var responseBodyText = await ReadResponseBodyAsync(context.Response);
-        _logger.LogInformation("==== MCP RESPONSE ====");
-        _logger.LogInformation("StatusCode: {StatusCode}", context.Response.StatusCode);
-        _logger.LogInformation("Body: {Body}", responseBodyText);
-        _logger.LogInformation("=====================");
-
-
-        await responseBody.CopyToAsync(originalBodyStream);
+            responseBody.Position = 0;
+            await responseBody.CopyToAsync(originalBodyStream);
+        }
+        catch (Exception ex)
+        {
+            
+            responseBody.Position = 0;
+            responseBody.Position = 0;
+            using (var reader = new StreamReader(responseBody, Encoding.UTF8))
+            {
+                var partial = await reader.ReadToEndAsync();
+                _logger.LogError(ex, "Unhandled exception in pipeline. Partial response so far: {Body}", partial);
+            }
+           
+            throw;
+        }
+        finally
+        {
+            // Always restore the original stream
+            context.Response.Body = originalBodyStream;
+            
+        }
     }
 
-    private async Task<string> ReadRequestBodyAsync(HttpRequest request)
+    private static async Task<string> ReadRequestBodyAsync(HttpRequest request)
     {
         request.Body.Position = 0;
         using var reader = new StreamReader(request.Body, Encoding.UTF8, leaveOpen: true);
@@ -53,7 +74,7 @@ public class McpLoggingMiddleware
         return string.IsNullOrEmpty(body) ? "(empty)" : body;
     }
 
-    private async Task<string> ReadResponseBodyAsync(HttpResponse response)
+    private static async Task<string> ReadResponseBodyAsync(HttpResponse response)
     {
         response.Body.Position = 0;
         using var reader = new StreamReader(response.Body, Encoding.UTF8, leaveOpen: true);

@@ -2,7 +2,7 @@ using LLama.Web.Common;
 
 namespace LLama.Web;
 
-public static  class Extensions
+public static class Extensions
 {
     /// <summary>
     /// Combines the AntiPrompts list and AntiPrompt csv 

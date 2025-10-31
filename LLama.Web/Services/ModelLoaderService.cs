@@ -5,7 +5,7 @@ namespace LLama.Web.Services;
 /// </summary>
 /// <typeparam name="T">Type used to identify contexts</typeparam>
 /// <seealso cref="Microsoft.Extensions.Hosting.IHostedService" />
-public class ModelLoaderService : IHostedService 
+public class ModelLoaderService : IHostedService
 {
     private readonly IModelService _modelService;
 

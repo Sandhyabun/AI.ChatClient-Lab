@@ -1,4 +1,4 @@
-﻿namespace LLama.Web.Async
+namespace LLama.Web.Async
 {
     /// <summary>
     /// Create an Async locking using statement

@@ -1,0 +1,76 @@
+﻿@page "/mcp-panel"
+@model LLama.Web.Pages.McpPanelModel
+@{
+    ViewData["Title"] = "MCP Testing Panel";
+}
+
+<section class="container" style="padding:16px;">
+  <h1 style="margin:0 0 12px 0;">MCP Testing Panel</h1>
+  <p style="color:#888;margin:0 0 16px 0;">
+    Toggle <strong>Local</strong> (SignalR) vs <strong>MCP</strong> (HTTP),
+    stream output live, and see raw server response.
+  </p>
+
+  <!-- Request pane -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;min-height:70vh;">
+    <div style="border:1px solid #333;border-radius:12px;padding:12px;overflow:auto;">
+      <h3 style="margin-top:0;">Request</h3>
+
+      <div style="display:flex;gap:12px;margin-bottom:8px;">
+        <label><input type="radio" name="source" value="local" checked> Local</label>
+        <label><input type="radio" name="source" value="mcp"> MCP</label>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <input id="userId" placeholder="userId" value="user-1" />
+        <input id="model" placeholder="model (optional)" value="default" />
+        <textarea id="prompt" placeholder="prompt" rows="5">Hello!</textarea>
+        <textarea id="params" placeholder='params JSON e.g. {"maxTokens":128}' rows="6">{}</textarea>
+
+        <button id="runBtn">Run</button>
+      </div>
+
+      <hr style="margin:12px 0;" />
+
+      <!-- Scenarios -->
+      <h4 style="margin:6px 0;">Scenarios</h4>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <input id="scenarioName" placeholder="scenario name" value="my-scenario" />
+        <button id="saveScenarioBtn">Save</button>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <select id="scenarioList" style="flex:1;"></select>
+        <button id="loadScenarioBtn">Load</button>
+        <button id="deleteScenarioBtn">Delete</button>
+      </div>
+
+      <hr style="margin:12px 0;" />
+
+      <!-- Multi-user -->
+      <h4 style="margin:6px 0;">Multi-user simulator</h4>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="userCount" type="number" value="3" min="1" style="width:90px;" />
+        <button id="simulateBtn">Simulate</button>
+        <span id="simResult" style="font-size:12px;color:#aaa;margin-left:6px;"></span>
+      </div>
+    </div>
+
+    <!-- Output (stream) -->
+    <div style="border:1px solid #333;border-radius:12px;padding:12px;overflow:auto;">
+      <h3 style="margin-top:0;">Output (stream)</h3>
+      <pre id="output" style="white-space:pre-wrap;"></pre>
+    </div>
+
+    <!-- Server Response (raw) -->
+    <div style="border:1px solid #333;border-radius:12px;padding:12px;overflow:auto;">
+      <h3 style="margin-top:0;">Server Response (raw)</h3>
+      <div id="meta" style="font-size:12px;color:#aaa;margin-bottom:6px;"></div>
+      <pre id="serverRaw" style="white-space:pre-wrap;font-size:12px;"></pre>
+    </div>
+  </div>
+</section>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/9.0.6/signalr.min.js" integrity="sha512-kkMt8UThSmWcdXLYFaGZ/U6vyWSNLZMUWQ5SMeF80pGqrEkH5ei9D/3MbVQpB8p7D5C3A4vlX7BpsWTT2BfB6A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>  
+  <script type="module" src="~/js/mcpPanel.js"></script>
+}

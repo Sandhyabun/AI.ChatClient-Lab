@@ -1,4 +1,4 @@
-﻿namespace LLama.Web.Common
+namespace LLama.Web.Common
 {
     /// <summary>
     /// The type of model load caching to use
