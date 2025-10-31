@@ -27,7 +27,7 @@ public class McpLoggingMiddleware
 
         //Response wrapping
         var originalBodyStream = context.Response.Body;
-        var responseBody = new MemoryStream();
+        using var responseBody = new MemoryStream();
         context.Response.Body = responseBody;
 
         try
@@ -60,7 +60,7 @@ public class McpLoggingMiddleware
         {
             // Always restore the original stream
             context.Response.Body = originalBodyStream;
-            responseBody.Dispose();
+            
         }
     }
 
