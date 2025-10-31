@@ -46,10 +46,7 @@ public class McpLoggingMiddleware
         }
         catch (Exception ex)
         {
-            // Put original stream back so the DeveloperExceptionPage can write to it
-            context.Response.Body = originalBodyStream;
-
-
+            
             responseBody.Position = 0;
             var partial = await new StreamReader(responseBody, Encoding.UTF8).ReadToEndAsync();
             _logger.LogError(ex, "Unhandled exception in pipeline. Partial response so far: {Body}", partial);
