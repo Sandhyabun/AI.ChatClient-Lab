@@ -180,15 +180,32 @@
         if (running) return;
         const n = Math.max(1, parseInt($("userCount").value || "1", 10));
         simResult.textContent = "Running…";
-        const times = [];
         setRunning(true);
+
+        const times = [];
 
         try {
             await Promise.all([...Array(n)].map(async (_, i) => {
                 const t0 = performance.now();
-                await runOnce({ userId: `user-${i + 1}` });
+
+                // Directly call logic similar to runOnce, but skip the global running flag
+                const req = {
+                    userId: `user-${i + 1}`,
+                    prompt: $("prompt").value,
+                    model: $("model").value,
+                    params: safeJson($("params").value)
+                };
+
+                const source = currentSource();
+                const raw = source === "local"
+                    ? await streamLocal(req, () => {}) 
+                    : await callMcp(req, () => {});
+
                 times.push(ms(t0));
+                return raw;
             }));
+
+            // Sort and compute metrics
             times.sort((a, b) => a - b);
             const avg = Math.round(times.reduce((a, b) => a + b, 0) / times.length);
             const p95 = times[Math.max(0, Math.floor(times.length * 0.95) - 1)];
