@@ -4,30 +4,47 @@ using static LLama.LLamaTransforms;
 using Microsoft.Extensions.Logging;
 namespace LLama.WebAPI.Services
 {
-    public class StatelessChatService
-    {
+    public class StatelessChatService : IDisposable
+    { 
+        private static LLamaWeights? _sharedWeights; // Shared across instances
         private readonly LLamaContext _context;
-        private readonly LLamaWeights _weights;
         private readonly ILogger<StatelessChatService> _log;
         private bool _disposed;
         public StatelessChatService(IConfiguration configuration, ILogger<StatelessChatService> log)
         {
             _log = log;
-            var sec = configuration.GetSection("LLama");
-            var modelPath = sec.GetValue<string>("ModelPath")!;
-            var ctxSize = sec.GetValue<uint?>("ContextSize") ?? 512;
-            var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
-            var @params = new ModelParams(modelPath)
+
+            // Load weights only once 
+            if (_sharedWeights == null)
             {
-                ContextSize = ctxSize,
-                GpuLayerCount = gpuLayers,
+                lock (typeof(StatelessChatService))
+                {
+                    if (_sharedWeights == null)
+                    {
+                        var sec = configuration.GetSection("LLama");
+                        var modelPath = sec.GetValue<string>("ModelPath")!;
+                        var ctxSize = sec.GetValue<uint?>("ContextSize") ?? 512;
+                        var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
+
+                        var @params = new ModelParams(modelPath)
+                        {
+                            ContextSize = ctxSize,
+                            GpuLayerCount = gpuLayers,
+                        };
+
+                        _sharedWeights = LLamaWeights.LoadFromFile(@params);
+                        log.LogInformation("✅ Shared LLama weights loaded from {ModelPath}", modelPath);
+                    }
+                }
+            }
+
+            // Create a new lightweight context for each service instance
+            var contextParams = new ModelParams(configuration.GetValue<string>("LLama:ModelPath")!)
+            {
+                ContextSize = configuration.GetValue<uint?>("LLama:ContextSize") ?? 512,
+                GpuLayerCount = configuration.GetValue<int?>("LLama:GpuLayerCount") ?? 0
             };
-            // todo: share weights from a central service
-            _weights = LLamaWeights.LoadFromFile(@params);
-            _context = new LLamaContext(_weights, @params);
-
-
-
+            _context = new LLamaContext(_sharedWeights!, contextParams);
         }
 
         public async Task<string> SendAsync(ChatHistory history)
@@ -38,12 +55,10 @@ namespace LLama.WebAPI.Services
             ArgumentException.ThrowIfNullOrWhiteSpace(last?.Content);
             try
             {
-                // existing LLama pipeline 
-                var session =
-                    new ChatSession(new InteractiveExecutor(_context))
-                        .WithOutputTransform(new KeywordTextOutputStreamTransform(
-                            keywords: new[] { "User:", "Assistant:" }, redundancyLength: 8))
-                        .WithHistoryTransform(new HistoryTransform());
+                var session = new ChatSession(new InteractiveExecutor(_context))
+                    .WithOutputTransform(new KeywordTextOutputStreamTransform(
+                        keywords: new[] { "User:", "Assistant:" }, redundancyLength: 8))
+                    .WithHistoryTransform(new HistoryTransform());
 
                 var resultStream = session.ChatAsync(
                     history,
@@ -71,9 +86,8 @@ namespace LLama.WebAPI.Services
             if (_disposed)
                 return;
 
-            _log.LogInformation("Disposing StatelessChatService...");
+            _log.LogInformation("🧹 Disposing StatelessChatService context...");
             _context?.Dispose();
-            _weights?.Dispose();
             _disposed = true;
         }
     }
