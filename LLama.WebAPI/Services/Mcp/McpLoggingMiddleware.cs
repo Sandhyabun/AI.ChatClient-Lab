@@ -48,9 +48,13 @@ public class McpLoggingMiddleware
         {
             
             responseBody.Position = 0;
-            var partial = await new StreamReader(responseBody, Encoding.UTF8).ReadToEndAsync();
-            _logger.LogError(ex, "Unhandled exception in pipeline. Partial response so far: {Body}", partial);
-
+            responseBody.Position = 0;
+            using (var reader = new StreamReader(responseBody, Encoding.UTF8))
+            {
+                var partial = await reader.ReadToEndAsync();
+                _logger.LogError(ex, "Unhandled exception in pipeline. Partial response so far: {Body}", partial);
+            }
+           
             throw;
         }
         finally
