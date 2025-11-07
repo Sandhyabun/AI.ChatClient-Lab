@@ -31,6 +31,7 @@ namespace LLama.Web.Common
 
         /// <inheritdoc />
         public int GpuLayerCount { get; set; } = 20;
+        
 
         /// <inheritdoc />
         public uint SeqMax { get; set; }

@@ -2,8 +2,15 @@ using LLama.WebAPI.Services;
 using LLama.WebAPI.Models;
 using LLama.WebAPI.Hubs;
 using Microsoft.Extensions.Options;
+using LLama.Web.Common;
+using LLama.WebAPI.Services;
+using Microsoft.Extensions.Options;
+
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.Configure<DecodingDefaultsOptions>(
+    builder.Configuration.GetSection("DecodingDefaults"));
+builder.Services.AddSingleton<IDecodingDefaultsProvider, DecodingDefaultsProvider>();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -25,6 +32,10 @@ builder.Services.AddCors(o =>
 builder.Services.AddSingleton<StatefulChatService>();   // For Local
 builder.Services.AddScoped<StatelessChatService>();     // For MCP
 builder.Services.AddHttpClient<McpClientService>();
+builder.Services.AddSingleton<IChatFormatterProvider, ChatFormatterProvider>(); // the per-model prompt tags
+builder.Services.AddOptions<LLamaOptions>()
+    .BindConfiguration(nameof(LLamaOptions));
+builder.Services.AddSingleton<ModelManager>(); 
 
 builder.Services.Configure<McpSettings>(
     builder.Configuration.GetSection("Mcp")

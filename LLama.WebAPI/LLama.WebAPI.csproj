@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LLama.Web\LLama.Web.csproj" />
     <ProjectReference Include="..\LLama\LLamaSharp.csproj" />
   </ItemGroup>
 

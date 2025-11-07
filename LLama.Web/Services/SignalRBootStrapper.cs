@@ -13,7 +13,7 @@ public sealed class SignalRBootstrapper(StreamService stream, ILogger<SignalRBoo
             logger.LogInformation("Received stream token: {Token}", token);
         });
 
-        logger.LogInformation("✅ StreamService started successfully.");
+        logger.LogInformation("StreamService started successfully.");
     }
 
     public async Task StopAsync(CancellationToken ct)

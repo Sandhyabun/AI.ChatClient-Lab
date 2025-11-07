@@ -5,8 +5,24 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace LLama.Web.Hubs;
 
-public class SessionConnectionHub : Hub<ISessionClient>
+public class SessionConnectionHub : Hub
 {
+    public async Task PingServer(string message)
+    {
+        await Clients.Caller.SendAsync("ReceiveToken", $"pong: {message}");
+    }
+
+    // simple streaming method to prove the pipeline
+    public async Task StreamResponse(string prompt)
+    {
+        // TODO: replace with your real inference loop
+        foreach (var token in new[] { "Hello", ", ", "world", "!" })
+        {
+            await Clients.Caller.SendAsync("ReceiveToken", token);
+        }
+        await Clients.Caller.SendAsync("StreamComplete");
+    }
+    
     private readonly ILogger<SessionConnectionHub> _logger;
     private readonly IModelSessionService _modelSessionService;
 
@@ -21,7 +37,7 @@ public class SessionConnectionHub : Hub<ISessionClient>
         _logger.Log(LogLevel.Information, "[OnConnectedAsync], Id: {0}", Context.ConnectionId);
 
         // Notify client of successful connection
-        await Clients.Caller.OnStatus(Context.ConnectionId, SessionConnectionStatus.Connected);
+        await Clients.Caller.SendAsync("OnStatus", Context.ConnectionId, SessionConnectionStatus.Connected);
         await base.OnConnectedAsync();
     }
 
@@ -44,12 +60,13 @@ public class SessionConnectionHub : Hub<ISessionClient>
         var modelSession = await _modelSessionService.CreateAsync(Context.ConnectionId, sessionConfig, inferenceConfig);
         if (modelSession is null)
         {
-            await Clients.Caller.OnError("Failed to create model session");
+            await Clients.Caller.SendAsync("OnError", "Failed to create model session");
             return;
         }
 
         // Notify client
-        await Clients.Caller.OnStatus(Context.ConnectionId, SessionConnectionStatus.Loaded);
+        await Clients.Caller.SendAsync("OnStatus", Context.ConnectionId, SessionConnectionStatus.Loaded);
+        
     }
 
     [HubMethodName("SendPrompt")]
