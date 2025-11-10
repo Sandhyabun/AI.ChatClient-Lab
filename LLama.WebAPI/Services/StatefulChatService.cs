@@ -12,30 +12,46 @@ public sealed class StatefulChatService
     private readonly LLamaContext _context;
     private readonly ILogger<StatefulChatService> _logger;
     private bool _continue = false;
+    private readonly LLamaWeights _weights;
 
     private const string SystemPrompt = "Transcript of a dialog, where the User interacts with an Assistant. Assistant is helpful, kind, honest, good at writing, and never fails to answer the User's requests immediately and with precision.";
 
     public StatefulChatService(IConfiguration configuration, ILogger<StatefulChatService> logger)
     {
+        _logger = logger;
         var sec = configuration.GetSection("LLama");
-        var modelPath = sec.GetValue<string>("ModelPath")!;
+
+        //  Read all model paths from config (array)
+        var firstModel = sec.GetSection("Models").GetChildren().FirstOrDefault();
+        var modelPath  = firstModel?.GetValue<string>("ModelPath");
+      
+
+        if (string.IsNullOrWhiteSpace(modelPath))
+        {
+            throw new InvalidOperationException(" No model path found in appsettings.Development.json.");
+        }
+
+        //  Context & GPU settings
         var ctxSize = sec.GetValue<uint?>("ContextSize") ?? 512;
         var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
+
         var @params = new ModelParams(modelPath)
         {
             ContextSize = ctxSize,
-            GpuLayerCount = gpuLayers,
+            GpuLayerCount = gpuLayers
         };
 
-        // todo: share weights from a central service
-        using var weights = LLamaWeights.LoadFromFile(@params);
+        //  Load weights 
+        _weights = LLamaWeights.LoadFromFile(@params);
+        _context = _weights.CreateContext(@params);
 
-        _logger = logger;
-        _context = new LLamaContext(weights, @params);
-
+        //  4. Create chat session
         _session = new ChatSession(new InteractiveExecutor(_context));
         _session.History.AddMessage(Common.AuthorRole.System, SystemPrompt);
+
+        _logger.LogInformation(" Loaded default model: {model}", Path.GetFileName(modelPath));
     }
+
 
     public void Dispose()
     {

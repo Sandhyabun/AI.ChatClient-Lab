@@ -14,35 +14,41 @@ namespace LLama.WebAPI.Services
         {
             _log = log;
 
-            // Load weights only once 
+            var sec = configuration.GetSection("LLama");
+            var modelPaths = sec.GetSection("ModelPath").Get<string[]>() ?? Array.Empty<string>();
+            var modelPath = modelPaths.FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(modelPath))
+            {
+                throw new InvalidOperationException(" No model path found in appsettings.Development.json.");
+            }
+
+            var ctxSize = sec.GetValue<uint?>("ContextSize") ?? 512;
+            var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
+
+            // Load weights only once (thread-safe)
             if (_sharedWeights == null)
             {
                 lock (typeof(StatelessChatService))
                 {
                     if (_sharedWeights == null)
                     {
-                        var sec = configuration.GetSection("LLama");
-                        var modelPath = sec.GetValue<string>("ModelPath")!;
-                        var ctxSize = sec.GetValue<uint?>("ContextSize") ?? 512;
-                        var gpuLayers = sec.GetValue<int?>("GpuLayerCount") ?? 0;
-
                         var @params = new ModelParams(modelPath)
                         {
                             ContextSize = ctxSize,
                             GpuLayerCount = gpuLayers,
                         };
-
                         _sharedWeights = LLamaWeights.LoadFromFile(@params);
-                        log.LogInformation("✅ Shared LLama weights loaded from {ModelPath}", modelPath);
+                        log.LogInformation(" Shared LLama weights loaded from {ModelPath}", modelPath);
                     }
                 }
             }
 
-            // Create a new lightweight context for each service instance
-            var contextParams = new ModelParams(configuration.GetValue<string>("LLama:ModelPath")!)
+            //  Create lightweight context for this instance
+            var contextParams = new ModelParams(modelPath)
             {
-                ContextSize = configuration.GetValue<uint?>("LLama:ContextSize") ?? 512,
-                GpuLayerCount = configuration.GetValue<int?>("LLama:GpuLayerCount") ?? 0
+                ContextSize = ctxSize,
+                GpuLayerCount = gpuLayers
             };
             _context = new LLamaContext(_sharedWeights!, contextParams);
         }
