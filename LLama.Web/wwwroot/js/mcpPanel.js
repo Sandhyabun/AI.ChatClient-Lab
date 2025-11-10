@@ -174,8 +174,31 @@
         localStorage.removeItem(key);
         refreshScenarioList();
     });
-
+    
     // Simulator
+    async function loadModels() {
+        try {
+            const response = await fetch("http://localhost:5000/api/models/list");
+            const models = await response.json();
+            const modelSelect = document.getElementById("model");
+
+            if (!modelSelect) return;
+
+            modelSelect.innerHTML = ""; // clear existing options
+
+            models.forEach(model => {
+                const opt = document.createElement("option");
+                const name = model.split("\\").pop(); // just filename
+                opt.value = model;
+                opt.textContent = name;
+                modelSelect.appendChild(opt);
+            });
+
+            console.log(`Loaded ${models.length} models from API`);
+        } catch (err) {
+            console.error("Failed to load models:", err);
+        }
+    }
     async function simulate() {
         if (running) return;
         const n = Math.max(1, parseInt($("userCount").value || "1", 10));
@@ -221,6 +244,8 @@
     runBtn.addEventListener("click", runOnce);
     simBtn.addEventListener("click", simulate);
     refreshScenarioList();
+    // Autoload model list on panel open
+    window.addEventListener("DOMContentLoaded", loadModels);
 
    
     return { runOnce, simulate, refreshScenarioList };

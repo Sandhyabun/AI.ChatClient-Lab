@@ -37,18 +37,49 @@ public class SessionConnectionHub : Hub<ISessionClient>
     [HubMethodName("LoadModel")]
     public async Task OnLoadModel(SessionConfig sessionConfig, InferenceOptions inferenceConfig)
     {
-        _logger.Log(LogLevel.Information, "[OnLoadModel] - Load new model, Connection: {0}", Context.ConnectionId);
+        var modelName = sessionConfig?.Model;
+
+        if (string.IsNullOrWhiteSpace(modelName))
+        {
+            _logger.LogWarning("Model name is null or empty. Fetching from backend /api/models/list ...");
+
+            try
+            {
+                using var http = new HttpClient();
+                var apiUrl = "http://localhost:5000/api/models/list";
+                var availableModels = await http.GetFromJsonAsync<List<string>>(apiUrl);
+
+                modelName = availableModels?.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch model list from backend API");
+            }
+
+            if (string.IsNullOrEmpty(modelName))
+            {
+                _logger.LogError(" No models available in backend API.");
+                await Clients.Caller.OnError("No models available to load.");
+                return;
+            }
+
+            sessionConfig.Model = modelName;
+        }
+
+        
+        _logger.LogInformation("LoadModel called. Model = {modelName}", modelName);
+        _logger.LogInformation("[OnLoadModel] - Load new model, Connection: {connectionId}", Context.ConnectionId);
+
         await _modelSessionService.CloseAsync(Context.ConnectionId);
 
-        // Create model session
         var modelSession = await _modelSessionService.CreateAsync(Context.ConnectionId, sessionConfig, inferenceConfig);
         if (modelSession is null)
         {
-            await Clients.Caller.OnError("Failed to create model session");
+            _logger.LogError(" Failed to create model session for {modelName}", modelName);
+            await Clients.Caller.OnError("Failed to create model session.");
             return;
         }
 
-        // Notify client
         await Clients.Caller.OnStatus(Context.ConnectionId, SessionConnectionStatus.Loaded);
     }
 
