@@ -22,8 +22,12 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:8px;">
-        <input id="userId" placeholder="userId" value="user-1" />
-        <input id="model" placeholder="model (optional)" value="default" />
+          <input id="userId" placeholder="userId" value="user-1" />
+          <label for="model">Model:</label>
+          <select id="model" style="width: 100%; margin-bottom: 8px;">
+              <option>Loading models...</option>
+          </select>
+       
         <textarea id="prompt" placeholder="prompt" rows="5">Hello!</textarea>
         <textarea id="params" placeholder='params JSON e.g. {"maxTokens":128}' rows="6">{}</textarea>
 

@@ -25,6 +25,7 @@ builder.Services.AddCors(o =>
 builder.Services.AddSingleton<StatefulChatService>();   // For Local
 builder.Services.AddScoped<StatelessChatService>();     // For MCP
 builder.Services.AddHttpClient<McpClientService>();
+builder.Services.AddSingleton<ModelManager>();
 
 builder.Services.Configure<McpSettings>(
     builder.Configuration.GetSection("Mcp")

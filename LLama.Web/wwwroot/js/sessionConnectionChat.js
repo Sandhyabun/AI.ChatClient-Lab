@@ -12,6 +12,14 @@ const createConnectionSessionChat = () => {
     const outputContainer = $("#output-container");
     const chatInput = $("#input");
 
+    // helper to safely extract clean model name
+    function normalizeModelName(value) {
+        if (!value) return "";
+        // take last part of path and strip .gguf
+        return value.split("\\").pop().replace(".gguf", "");
+    }
+
+    //  STATUS HANDLERS
     const onStatus = (connection, status) => {
         if (status == Enums.SessionConnectionStatus.Disconnected) {
             onError("Socket not connected")
@@ -26,24 +34,23 @@ const createConnectionSessionChat = () => {
             $("#unload").show();
             onInfo(`New model session successfully started`)
         }
-    }
+    };
 
     const onError = (error) => {
         enableControls();
         outputContainer.append(Mustache.render(outputErrorTemplate, { text: error, date: getDateTime() }));
-    }
+    };
 
     const onInfo = (message) => {
         outputContainer.append(Mustache.render(outputInfoTemplate, { text: message, date: getDateTime() }));
-    }
+    };
 
     let responseContent;
     let responseContainer;
     let responseFirstToken;
 
     const onResponse = (response) => {
-        if (!response)
-            return;
+        if (!response) return;
 
         if (response.tokenType == Enums.TokenType.Begin) {
             let uniqueId = randomString();
@@ -59,174 +66,124 @@ const createConnectionSessionChat = () => {
             enableControls();
             responseContainer.find(".signature").append(Mustache.render(signatureTemplate, response));
             scrollToBottom();
-        }
-        else {
+        } else {
             if (responseFirstToken) {
                 responseContent.empty();
                 responseFirstToken = false;
                 responseContainer.find(".date").append(getDateTime());
                 responseContent.append(response.content.trim());
-            }
-            else {
+            } else {
                 responseContent.append(response.content);
             }
             scrollToBottom();
         }
-    }
+    };
 
     const sendPrompt = async () => {
         const text = chatInput.val();
-        if (text) {
-            chatInput.val(null);
-            disableControls();
-            outputContainer.append(Mustache.render(outputUserTemplate, { text: text, date: getDateTime() }));
-            inferenceSession = await connection
-                .stream("SendPrompt", text, serializeFormToJson('SessionParameters'))
-                .subscribe({
-                    next: onResponse,
-                    complete: onResponse,
-                    error: onError,
-                });
-            scrollToBottom(true);
-        }
-    }
+        if (!text) return;
+
+        chatInput.val(null);
+        disableControls();
+        outputContainer.append(Mustache.render(outputUserTemplate, { text, date: getDateTime() }));
+
+        const params = serializeFormToJson("SessionParameters");
+
+        // include clean model name in params
+        const selectedModel = document.getElementById("SessionConfig_Model")?.value;
+
+
+        if (selectedModel) params.Model = normalizeModelName(selectedModel);
+
+        inferenceSession = await connection
+            .stream("SendPrompt", text, params)
+            .subscribe({
+                next: onResponse,
+                complete: onResponse,
+                error: onError,
+            });
+
+        scrollToBottom(true);
+    };
 
     const cancelPrompt = async () => {
-        if (inferenceSession)
-            inferenceSession.dispose();
-    }
+        if (inferenceSession) inferenceSession.dispose();
+    };
 
     const loadModel = async () => {
-        const sessionParams = serializeFormToJson('SessionParameters');
+        const sessionParams = serializeFormToJson("SessionParameters");
+
+        // safely attach normalized model
+        const selectedModel = document.getElementById("SessionConfig_Model")?.value;
+
+        if (selectedModel) sessionParams.Model = normalizeModelName(selectedModel);
+
         loaderShow();
         disableControls();
         disablePromptControls();
         $("#load").attr("disabled", "disabled");
 
-        // TODO: Split parameters sets
-        await connection.invoke('LoadModel', sessionParams, sessionParams);
-    }
+        await connection.invoke("LoadModel", sessionParams, sessionParams);
+    };
 
     const unloadModel = async () => {
         await cancelPrompt();
         disableControls();
         enablePromptControls();
         $("#load").removeAttr("disabled");
-    }
+    };
 
     const serializeFormToJson = (form) => {
         const formDataJson = {};
         const formData = new FormData(document.getElementById(form));
         formData.forEach((value, key) => {
-
-            if (key.includes("."))
-                key = key.split(".")[1];
-
-            // Convert number strings to numbers
-            if (!isNaN(value) && value.trim() !== "") {
-                formDataJson[key] = parseFloat(value);
-            }
-            // Convert boolean strings to booleans
-            else if (value === "true" || value === "false") {
-                formDataJson[key] = (value === "true");
-            }
-            else {
-                formDataJson[key] = value;
-            }
+            if (key.includes(".")) key = key.split(".")[1];
+            if (!isNaN(value) && value.trim() !== "") formDataJson[key] = parseFloat(value);
+            else if (value === "true" || value === "false") formDataJson[key] = (value === "true");
+            else formDataJson[key] = value;
         });
         return formDataJson;
-    }
+    };
 
-    const enableControls = () => {
-        $(".input-control").removeAttr("disabled");
-    }
-
-    const disableControls = () => {
-        $(".input-control").attr("disabled", "disabled");
-    }
+    const enableControls = () => $(".input-control").removeAttr("disabled");
+    const disableControls = () => $(".input-control").attr("disabled", "disabled");
 
     const enablePromptControls = () => {
         $("#load").show();
         $("#unload").hide();
         $(".prompt-control").removeAttr("disabled");
-        activatePromptTab();
-    }
+    };
+    const disablePromptControls = () => $(".prompt-control").attr("disabled", "disabled");
 
-    const disablePromptControls = () => {
-        $(".prompt-control").attr("disabled", "disabled");
-        activateParamsTab();
-    }
-
-    const clearOutput = () => {
-        outputContainer.empty();
-    }
-
-    const updatePrompt = () => {
-        const customPrompt = $("#PromptText");
-        const selection = $("option:selected", "#Prompt");
-        const selectedValue = selection.data("prompt");
-        customPrompt.text(selectedValue);
-    }
-
-    const getDateTime = () => {
-        const dateTime = new Date();
-        return dateTime.toLocaleString();
-    }
-
-    const randomString = () => {
-        return Math.random().toString(36).slice(2);
-    }
-
+    const clearOutput = () => outputContainer.empty();
+    const getDateTime = () => new Date().toLocaleString();
+    const randomString = () => Math.random().toString(36).slice(2);
     const scrollToBottom = (force) => {
         const scrollTop = scrollContainer.scrollTop();
         const scrollHeight = scrollContainer[0].scrollHeight;
-        if (force) {
+        if (force || scrollTop + 70 >= scrollHeight - scrollContainer.innerHeight()) {
             scrollContainer.scrollTop(scrollContainer[0].scrollHeight);
-            return;
         }
-        if (scrollTop + 70 >= scrollHeight - scrollContainer.innerHeight()) {
-            scrollContainer.scrollTop(scrollContainer[0].scrollHeight)
-        }
-    }
+    };
+    const loaderShow = () => $(".spinner").show();
+    const loaderHide = () => $(".spinner").hide();
 
-    const activatePromptTab = () => {
-        $("#nav-prompt-tab").trigger("click");
-    }
-
-    const activateParamsTab = () => {
-        $("#nav-params-tab").trigger("click");
-    }
-
-    const loaderShow = () => {
-        $(".spinner").show();
-    }
-
-    const loaderHide = () => {
-        $(".spinner").hide();
-    }
-
-    // Map UI functions
+    //EVENT BINDINGS
     $("#load").on("click", loadModel);
     $("#unload").on("click", unloadModel);
     $("#send").on("click", sendPrompt);
     $("#clear").on("click", clearOutput);
     $("#cancel").on("click", cancelPrompt);
-    $("#Prompt").on("change", updatePrompt);
-    chatInput.on('keydown', function (event) {
-        if (event.key === 'Enter' && !event.shiftKey) {
+    chatInput.on("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
             sendPrompt();
         }
     });
-    $(".slider").on("input", function (e) {
-        const slider = $(this);
-        slider.next().text(slider.val());
-    }).trigger("input");
 
-
-    // Map signalr functions
+    //SIGNALR 
     connection.on("OnStatus", onStatus);
     connection.on("OnError", onError);
     connection.on("OnResponse", onResponse);
     connection.start();
-}
+};
